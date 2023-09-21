@@ -14,7 +14,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     permissions:
-      id-token: "write"
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -28,3 +29,15 @@ jobs:
           project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
     outputs:
       image: ${{ steps.docker-build-push.outputs.image }}
+  deploy-dev:
+    name: Deploy to dev-gcp
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: nais/deploy/actions/deploy@v1
+        env:
+          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
+          CLUSTER: dev-gcp
+          RESOURCE: nais-dev.yaml
+          VAR: image=${{ needs.build.outputs.image }}
