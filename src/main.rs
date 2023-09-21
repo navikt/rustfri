@@ -4,13 +4,15 @@ use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 
 fn main() {
-    match TcpListener::bind("127.0.0.1:7878") {
+    println!("====================\nRUSTFRI\n====================\n");
+    match TcpListener::bind("0.0.0.0:8080") {
         Ok(listener) => { håndter_requests(listener) }
         Err(error) => panic!("Error: {:?}", error)
     };
 }
 
 fn håndter_requests(listener: TcpListener) {
+    println!("Klar for å motta requests");
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => { håndter_request(stream) }
