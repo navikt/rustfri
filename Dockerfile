@@ -1,10 +1,11 @@
-FROM rust:1.72.0 as build-env
-WORKDIR /app
-COPY . /app
+FROM clux/muslrust:stable as builder
+WORKDIR /build
+COPY . .
+ENV RUSTFLAGS='-C target-feature=+crt-static'
 RUN cargo build --release
 
-FROM gcr.io/distroless/cc-debian12:nonroot
+FROM gcr.io/distroless/static-debian11:nonroot
 WORKDIR /
-COPY --from=build-env /app/target/release/rustfri /
+COPY --from=builder /build/target/x86_64-unknown-linux-musl/release/rustfri /
 EXPOSE 8080
 CMD ["/rustfri"]
