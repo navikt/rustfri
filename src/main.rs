@@ -21,15 +21,23 @@ fn motta_tilkoblinger(listener: &TcpListener) {
     }
 }
 
-fn les_og_svar_httpforespørsel(mut stream: TcpStream) {
+fn les_og_svar_httpforespørsel(stream: TcpStream) {
     println!("Connection established! 2");
-    let reader = BufReader::new(&stream);
-    let request: Vec<String> = reader
+    let request = les_httpforespørsel(&stream);
+    println!("Request: {:#?}", request);
+    svar_httpforespørsel(&stream)
+}
+
+fn les_httpforespørsel(stream: &TcpStream) -> Vec<String> {
+    let reader = BufReader::new(stream);
+    return reader
         .lines()
         .filter_map(|line| line.ok())
         .take_while(|line| !line.is_empty())
         .collect();
-    println!("Request: {:#?}", request);
+}
+
+fn svar_httpforespørsel(mut stream: &TcpStream) {
     let response = "HTTP/1.1 200 OK\r\n\r\nRustfri!";
     stream.write_all(response.as_bytes()).unwrap();
 }
