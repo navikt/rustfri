@@ -1,7 +1,7 @@
 extern crate core;
 
 use json::{JsonValue, object};
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Error, Write};
 use std::net::{TcpListener, TcpStream};
 use chrono::{DateTime, Utc};
 use std::time::SystemTime;
@@ -18,32 +18,47 @@ fn main() {
 fn motta_tilkoblinger(listener: &TcpListener) {
     log_info("Klar for å motta requests");
     for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => les_og_svar_httpforespørsel(stream),
-            Err(error) => panic!("Error: {:?}", error)
-        }
+        les_og_svar_httpforespørsel(stream);
     }
 }
 
-fn les_og_svar_httpforespørsel(stream: TcpStream) {
-    log_info("Connection established!");
-    let request = les_httpforespørsel(&stream);
-    log_info(&format!("Request: {:#?}", request));
-    svar_httpforespørsel(&stream)
+fn les_og_svar_httpforespørsel(stream: Result<TcpStream, Error>) {
+    match stream {
+        Ok(stream) => {
+            log_info("Connection established!");
+            let _request = les_httpforespørsel(&stream);
+            svar_httpforespørsel(&stream)
+        },
+        Err(error) => panic!("Error: {:?}", error)
+    }
 }
 
 fn les_httpforespørsel(stream: &TcpStream) -> Vec<String> {
     let reader = BufReader::new(stream);
-    return reader
+    let request = reader
         .lines()
         .filter_map(|line| line.ok())
         .take_while(|line| !line.is_empty())
         .collect();
+    log_info(&format!("Request: {:#?}", request));
+    return request
 }
 
 fn svar_httpforespørsel(mut stream: &TcpStream) {
-    let response = "HTTP/1.1 200 OK\r\n\r\nRustfri!";
-    stream.write_all(response.as_bytes()).unwrap();
+    let respons = lag_http_respons(200, "Velkommen til Rustfri!");
+    stream.write_all(respons.as_bytes()).expect("Kunne ikke skrive respons til klient")
+}
+
+fn lag_http_respons(statuskode: u8, innhold: &str) -> String {
+    let statuslinje = lag_http_statuslinje(statuskode);
+    return format!("HTTP/1.1 {statuslinje}\r\n\r\n{innhold}");
+}
+
+fn lag_http_statuslinje(statuskode: u8) -> String {
+    return match statuskode {
+        200 => String::from("200 OK"),
+        _ => panic!("Ukjent statuskode angitt: {statuskode}\n")
+    }
 }
 
 fn log_info(melding: &str) {
